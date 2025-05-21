@@ -6,9 +6,10 @@ from threading import Thread
 from telebot import types
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
 import datetime
+from env import api_token_tg
 
 #Создание токена и списка
-bot = telebot.TeleBot()
+bot = telebot.TeleBot(api_token_tg)
 memoris = []
 
 #Приветствие
