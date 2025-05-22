@@ -11,6 +11,9 @@ from env import api_token_tg
 #Создание токена и списка
 bot = telebot.TeleBot(api_token_tg)
 memoris = []
+wethear = {}
+api_user = ""
+api = ""
 
 #Приветствие
 @bot.message_handler(commands=["start"])
@@ -19,11 +22,37 @@ def welcome(message):
     bot.send_message(message.chat.id, "Добро пожаловать это бот напоминалка 3000\nСпомощью него ты можешь ставить напоминания\nА также он может отсылать погоду на день =)\n\nНадеюсь вам поравится новый бот.")
     keyboard = InlineKeyboardMarkup()
     button1 = InlineKeyboardButton(text="Настройки событий", callback_data="settings")
+    button2 = InlineKeyboardButton(text="Настройки погоды", callback_data="weather")
 
-    print(message)
-    keyboard.add(button1)
+    global api_user
+    api_user = (message.from_user.id)
+    print(api_user)
+    keyboard.add(button1, button2)
 
     bot.send_message(message.chat.id, "Нажмите кнопку ниже, чтобы создать новое напоминание:", reply_markup=keyboard)
+
+@bot.callback_query_handler(func=lambda call: call.data == "weather")
+def change_events(call):
+    print(api_user)
+    for i in wethear:
+        if api_user == i[api_user]:
+            global api
+            api = i["api"]
+            keyboard = InlineKeyboardMarkup()
+            button1 = InlineKeyboardButton(text="Изменить время и город", callback_data="change_weather")
+            button3 = InlineKeyboardButton(text="Ничего не делать", callback_data="nothing")
+            keyboard.add(button1, button3)
+            bot.send_message(call.message.chat.id, f"Вы уже настраваили погоду, отправка погоды в: {api_user.api} а прогноз перёдтся из {api_user.city}, хотите что-то изменит", reply_markup=keyboard)
+        else:
+            keyboard = InlineKeyboardMarkup()
+            button1 = InlineKeyboardButton(text="Настроить время и город", callback_data="change_weather")
+            bot.send_message(call.message.chat.id, f"Вы ещё не настраивали погоду\n Нажмите на конпку ниже чтобы добавить время и город из которого будет прадтся прогноз", reply_markup=keyboard)
+
+@bot.callback_query_handler(func=lambda call: call.data == "change_weather")
+def change_events(call):
+    if api != "":
+        bot.send_message(call.message.chat.id, "отправь ниже новое время в формате (ЧЧ:ММ) когда надо отправлять погоду")
+        bot.register_next_step_handler(lambda message: get_time_weather(call))
 
 @bot.callback_query_handler(func=lambda call: call.data == "settings")
 def change_events(call):
@@ -35,6 +64,17 @@ def change_events(call):
     #Проверка есть ли события в списке
     bot.send_message(call.message.chat.id, f"На данный момент у вас есть такие события как:", reply_markup=keyboard1)
 
+
+
+#_________2.Для погоды__________
+def get_time_weather(message):
+    time_weather = message.text
+    wethear[api_user] = time_weather
+    bot.register_next_step_handler(time_weather, lambda message: get_city())
+
+#___________3.Для узнавания города_________
+def get_city(time_event, message):
+    pass
 
 #_________2__________
 def get_time(message):
@@ -51,6 +91,18 @@ def get_text(time_event, message):
 
 #_______________Основное действие_______________________
 #Создаём функцию которая добавляет новое событие в список
+def add_event(time_event, name_event, chat_id):
+    memoris.append({
+        "time_event" : time_event,
+        "name_event" : name_event,
+        "chat_id" : chat_id
+    })
+    bot.send_message(chat_id, f"Напоминание установлено на {time_event}")
+@bot.callback_query_handler(func=lambda call: call.data == "add_memoris")
+
+
+#________________________________________________________
+#Создаём функцию которая добавляет пользавателя с временем и городом
 def add_event(time_event, name_event, chat_id):
     memoris.append({
         "time_event" : time_event,
